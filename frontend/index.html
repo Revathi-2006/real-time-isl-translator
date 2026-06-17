@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>ISL AI</title>
+
+<script src="https://cdn.socket.io/4.0.1/socket.io.min.js"></script>
+
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+
+<style>
+
+#welcomeScreen {
+    animation: fadeIn 1.2s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from { opacity:0; transform: scale(1.05); }
+    to { opacity:1; transform: scale(1); }
+}
+
+/* ===== BODY ===== */
+body {
+    margin:0;
+    font-family:'Poppins', sans-serif;
+    background: linear-gradient(135deg, #020617, #0f172a, #1e3a8a);
+    color:white;
+}
+
+/* ===== HEADER ===== */
+.header {
+    text-align:center;
+    padding:15px;
+}
+
+h1 {
+    font-size:30px;
+}
+
+.tagline {
+    color:#94a3b8;
+}
+
+/* ===== HAMBURGER ===== */
+.menu-btn {
+    position:fixed;
+    top:20px;
+    left:20px;
+    font-size:26px;
+    cursor:pointer;
+    background: rgba(255,255,255,0.1);
+    backdrop-filter: blur(10px);
+    padding:10px 14px;
+    border-radius:10px;
+    z-index:9999;
+    color:white;
+    box-shadow:0 0 10px rgba(0,0,0,0.5);
+}
+
+/* ===== SIDEBAR ===== */
+.sidebar {
+    position:fixed;
+    left:-260px;
+    top:0;
+    width:260px;
+    height:100%;
+    background:#020617;
+    padding:20px;
+    transition:0.3s;
+    overflow-y: auto;
+    z-index:9998;
+}
+
+.sidebar.active {
+    left:0;
+}
+
+.sidebar h3 {
+    margin-top:20px;
+}
+
+.sidebar button {
+    display:block;
+    width:100%;
+    margin:5px 0;
+    padding:8px;
+    border:none;
+    border-radius:8px;
+    background:#1e293b;
+    color:white;
+}
+
+/* ===== GLASS ===== */
+.glass {
+    background: rgba(255,255,255,0.08);
+    backdrop-filter: blur(15px);
+    border-radius:15px;
+    padding:20px;
+    margin:20px auto;
+    width:90%;
+    max-width:900px;
+    box-shadow:0 0 30px rgba(0,0,0,0.5);
+}
+
+/* ===== CONTROLS ===== */
+.controls {
+    text-align:center;
+}
+
+input {
+    padding:10px;
+    border-radius:20px;
+    border:none;
+}
+
+/* ===== BUTTON ===== */
+.btn {
+    padding:10px 18px;
+    border-radius:25px;
+    border:none;
+    margin:5px;
+    cursor:pointer;
+}
+
+.blue { background:#2563eb; color:white; }
+.green { background:#16a34a; color:white; }
+.gray { background:#334155; color:white; }
+
+/* ===== VIDEO ===== */
+.video-box {
+    display:flex;
+    justify-content:center;
+}
+
+video {
+    width:100%;
+    max-width:700px;
+    height:auto;
+    border-radius:15px;
+    object-fit:contain;   /* 🔥 FIXED */
+}
+
+/* ===== CHAT ===== */
+#chatBox {
+    width:60%;
+    margin:20px auto;
+    background:#1e293b;
+    padding:15px;
+    border-radius:10px;
+    text-align: center;
+}
+
+#messages {
+    height:150px;
+    overflow-y:auto;
+}
+
+.message {
+    background:#334155;
+    margin:5px;
+    padding:6px;
+    border-radius:6px;
+}
+
+.input-group {
+    display:flex;
+    justify-content:center;
+    gap:10px;
+    margin-top:10px;
+}
+
+.input-group input {
+    width:60%;
+}
+
+.input-group button {
+    padding:8px 15px;
+}
+
+/* ===== SIGN PLAYER ===== */
+#signPlayer {
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+}
+
+#signVideo, #signImage {
+    max-width:100%;
+    max-height:350px;
+    border-radius:12px;
+}
+
+/* ===== GLOW ===== */
+.glow {
+    box-shadow:0 0 25px #22c55e, 0 0 50px #22c55e;
+}
+
+.main-content{
+    transition: margin-left 0.3s;
+}
+
+.main-content.shift{
+    margin-left: 260px;
+}
+
+
+
+</style>
+</head>
+
+<body>
+
+<div id="welcomeScreen" style="
+position:fixed;
+top:0;
+left:0;
+width:100%;
+height:100%;
+background: linear-gradient(135deg, #020617, #0f172a, #1e3a8a);
+display:flex;
+flex-direction:column;
+justify-content:center;
+align-items:center;
+z-index:99999;
+text-align:center;
+">
+
+    <h1 id="typingText" style="font-size:40px;"></h1>
+    <p style="color:#94a3b8; margin-bottom:20px;">
+        Real-time Sign Language Communication
+    </p>
+
+    <button onclick="enterApp()" style="
+    padding:12px 25px;
+    border:none;
+    border-radius:25px;
+    background:#22c55e;
+    color:white;
+    font-size:18px;
+    cursor:pointer;
+    ">
+        🚀 Start
+    </button>
+
+</div>
+
+<div class="menu-btn" onclick="toggleMenu()">☰ </div>
+
+<!-- SIDEBAR -->
+<div id="sidebar" class="sidebar"><br/><br/>
+
+<h3>Recognized Signs</h3>
+<button onclick="quickSend('HELLO')">HELLO</button>
+<button onclick="quickSend('HELP')">HELP</button>
+<button onclick="quickSend('YES')">YES</button>
+<button onclick="quickSend('PLEASE')">PLEASE</button>
+<button onclick="quickSend('THANKYOU')">THANKYOU</button>
+<button onclick="quickSend('STOP')">STOP</button>
+<button onclick="quickSend('OK')">OK</button>
+<button onclick="quickSend('WATER')">WATER</button>
+<button onclick="quickSend('SORRY')">SORRY</button>
+<button onclick="quickSend('WAIT')">WAIT</button>
+<button onclick="quickSend('GOOD_MORNING')">GOOD MORNING</button>
+<button onclick="quickSend('SEE_YOU_LATER')">SEE YOU LATER</button>
+<button onclick="quickSend('HOW_ARE_YOU')">HOW ARE YOU</button>
+
+<h3>Extended Vocabulary</h3>
+<button onclick="quickSend('HAPPY')">HAPPY</button>
+<button onclick="quickSend('BATHROOM')">BATHROOM</button>
+<button onclick="quickSend('I_LOVE_YOU')">I LOVE YOU</button>
+<button onclick="quickSend('EAT')">EAT</button>
+<button onclick="quickSend('FAMILY')">FAMILY</button>
+<button onclick="quickSend('FRIEND')">FRIEND</button>
+<button onclick="quickSend('I_REALLY_LOVE_YOU')">I REALLY LOVE YOU</button>
+<button onclick="quickSend('I')">I</button>
+<button onclick="quickSend('MOM')">MOM</button>
+<button onclick="quickSend('NO')">NO</button>
+<button onclick="quickSend('PAIN')">PAIN</button>
+<button onclick="quickSend('STAND_UP')">STAND UP</button>
+
+</div>
+
+<div id="mainContent" class="main-content"
+style="display:none;">
+
+<!-- HEADER -->
+<div class="header">
+<h1>🤟 INDIAN SIGN LANGUAGE COMMUNICATOR</h1>
+<p class="tagline">Break barriers. Speak with signs. Understand instantly.</p>
+</div>
+
+<!-- CONTROLS -->
+<div class="controls">
+<input id="roomInput" placeholder="Room ID">
+<button class="btn gray" onclick="joinRoom()">Join</button>
+<button class="btn blue" onclick="setMode('STATIC')">STATIC</button>
+<button class="btn green" onclick="setMode('DYNAMIC')">DYNAMIC</button>
+<button class="btn gray" onclick="startSpeech()">🎤 Speak</button><br/>
+
+<div id="status">Mode: STATIC</div>
+</div>
+
+<!-- CAMERA -->
+<div id="videoContainer" class="glass video-box">
+<video id="localVideo" autoplay muted></video>
+<img id="remoteVideo" style="
+width:100%;
+max-width:700px;
+border-radius:15px;
+margin-top:10px;
+">
+</div>
+
+<!-- CHAT -->
+<div id="chatBox">
+<div id="messages"></div>
+<div class="input-group">
+<input id="textInput">
+<button onclick="sendText()">Send</button>
+</div>
+</div>
+
+<div class="glass" style="text-align:center;">
+
+    <!--sentence builder-->
+<h3>Sentence Builder</h3>
+
+<div id="sentenceBox" style="
+min-height:40px;
+background:#020617;
+padding:10px;
+border-radius:10px;
+margin-bottom:10px;
+font-size:18px;
+">
+</div>
+
+<button onclick="playSentence()" class="btn green">▶ Play Sentence</button>
+<button onclick="clearSentence()" class="btn gray">❌ Clear</button>
+
+</div>
+
+<!--history box-->
+
+<div class="glass" style="text-align:center;">
+<h3 style="position: relative; text-align:center;">
+    📜 Conversation History
+    <span id="eyeBtn" onclick="toggleHistory()" style="
+    position: relative;
+    right: 1px;
+    top:50%;
+    transform:translate Y(-50%);
+    cursor:pointer; font-size:18px;">
+        👁
+    </span>
+</h3>
+
+<div id="historyBox" style="
+display: block;
+height:120px;
+overflow-y:auto;
+background:#020617;
+padding:10px;
+border-radius:10px;
+text-align:left;
+font-size:14px;
+color:white;
+">
+</div>
+
+<button class="btn blue" onclick="downloadHistory()">⬇ Download</button>
+<button class="btn gray" onclick="clearHistory()">❌ Clear</button>
+</div>
+
+<!-- SIGN PLAYBACK -->
+<div id="signPlayer" class="glass">
+<h3>🎥 Sign Playback</h3>
+
+<video id="signVideo" controls style="display:none;"></video>
+<img id="signImage" style="display:none;">
+</div>
+</div>
+
+<script src="main.js"></script>
+
+</body>
+</html>
